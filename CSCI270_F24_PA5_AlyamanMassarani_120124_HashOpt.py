@@ -1,6 +1,8 @@
 import random
 import math
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class HashTable:
@@ -314,13 +316,13 @@ def nelder_mead(
     return best_point[0], best_point[1], int(best_point[2]), int(best_value)
 
 
-if __name__ == "__main__":
+def compare_iteration():
     # Create an instance of HashTable with initial size
     initial_size = 20
     hash_table = HashTable(initial_size)
 
     # Insert random keys into the hash table for testing
-    print("Inserting test data...")
+    # print("Inserting test data...")
     for i in range(50):
         hash_table.insert(random.randint(0, 1000), i, a=1, b=1)
 
@@ -329,34 +331,34 @@ if __name__ == "__main__":
     initial_b = 1
     initial_m = initial_size
 
-    print("\nOptimizing hash function parameters...")
+    # print("\nOptimizing hash function parameters...")
 
     # Run Hill Climbing
     hc_a, hc_b, hc_m, hc_collisions = hill_climbing(
         hash_table, initial_a, initial_b, initial_m
     )
-    print(f"\nHill Climbing Results:")
-    print(f"Optimized parameters: a={hc_a:.4f}, b={hc_b:.4f}, m={hc_m}")
-    print(f"Final collision count: {hc_collisions}")
+    # print(f"\nHill Climbing Results:")
+    # print(f"Optimized parameters: a={hc_a:.4f}, b={hc_b:.4f}, m={hc_m}")
+    # print(f"Final collision count: {hc_collisions}")
 
     # Run Simulated Annealing
     sa_a, sa_b, sa_m, sa_collisions = simulated_annealing(
         hash_table, initial_a, initial_b, initial_m
     )
-    print(f"\nSimulated Annealing Results:")
-    print(f"Optimized parameters: a={sa_a:.4f}, b={sa_b:.4f}, m={sa_m}")
-    print(f"Final collision count: {sa_collisions}")
+    # print(f"\nSimulated Annealing Results:")
+    # print(f"Optimized parameters: a={sa_a:.4f}, b={sa_b:.4f}, m={sa_m}")
+    # print(f"Final collision count: {sa_collisions}")
 
     # Run Nelder-Mead
     nm_a, nm_b, nm_m, nm_collisions = nelder_mead(
         hash_table, initial_a, initial_b, initial_m
     )
-    print(f"\nNelder-Mead Results:")
-    print(f"Optimized parameters: a={nm_a:.4f}, b={nm_b:.4f}, m={nm_m}")
-    print(f"Final collision count: {nm_collisions}")
+    # print(f"\nNelder-Mead Results:")
+    # print(f"Optimized parameters: a={nm_a:.4f}, b={nm_b:.4f}, m={nm_m}")
+    # print(f"Final collision count: {nm_collisions}")
 
     # Compare results
-    print("\nComparison of Optimization Methods:")
+    # print("\nComparison of Optimization Methods:")
     methods = {
         "Hill Climbing": (hc_collisions, hc_a, hc_b, hc_m),
         "Simulated Annealing": (sa_collisions, sa_a, sa_b, sa_m),
@@ -364,8 +366,112 @@ if __name__ == "__main__":
     }
 
     best_method = min(methods.items(), key=lambda x: x[1][0])
-    print(f"\nBest performing method: {best_method[0]}")
-    print(
-        f"Parameters: a={best_method[1][1]:.4f}, b={best_method[1][2]:.4f}, m={best_method[1][3]}"
+    # print(f"\nBest performing method: {best_method[0]}")
+    # print(
+    #     f"Parameters: a={best_method[1][1]:.4f}, b={best_method[1][2]:.4f}, m={best_method[1][3]}"
+    # )
+    # print(f"Collision count: {best_method[1][0]}")
+    return hc_collisions, sa_collisions, nm_collisions, best_method[0]
+
+
+def main():
+    # Run experiments
+    num_iterations = 50
+    results_df = []
+
+    print("Running optimization experiments...")
+    for i in range(num_iterations):
+        if i % 10 == 0:
+            print(f"Progress: {i}/{num_iterations}")
+        results_df.append(compare_iteration())
+
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(
+        results_df,
+        columns=[
+            "Hill Climbing Collisions",
+            "Simulated Annealing Collisions",
+            "Nelder-Mead Collisions",
+            "Best method",
+        ],
     )
-    print(f"Collision count: {best_method[1][0]}")
+
+    # Create figure with two subplots side by side
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    # Plot 1: Bar chart of best performing methods
+    best_counts = results_df["Best method"].value_counts()
+    colors = ["#2ecc71", "#e74c3c", "#3498db"]  # Green, Red, Blue
+    best_counts.plot(kind="bar", ax=ax1, color=colors)
+    ax1.set_title("Best Performing Algorithm Distribution", pad=20)
+    ax1.set_xlabel("Algorithm")
+    ax1.set_ylabel("Number of Times Best")
+    ax1.tick_params(axis="x", rotation=45)
+
+    # Add value labels on top of each bar
+    for i, v in enumerate(best_counts):
+        ax1.text(i, v, str(v), ha="center", va="bottom")
+
+    # Plot 2: Box plot of collisions
+    collision_data = [
+        results_df["Hill Climbing Collisions"],
+        results_df["Simulated Annealing Collisions"],
+        results_df["Nelder-Mead Collisions"],
+    ]
+    labels = ["Hill\nClimbing", "Simulated\nAnnealing", "Nelder-\nMead"]
+
+    bp = ax2.boxplot(
+        collision_data,
+        labels=labels,
+        patch_artist=True,
+        medianprops=dict(color="black", linewidth=1.5),
+        flierprops=dict(marker="o", markerfacecolor="gray"),
+    )
+
+    # Set colors for boxes
+    for patch, color in zip(bp["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+
+    ax2.set_title("Distribution of Collisions by Algorithm", pad=20)
+    ax2.set_ylabel("Number of Collisions")
+    ax2.grid(True, linestyle="--", alpha=0.7)
+
+    # Adjust layout and display
+    plt.tight_layout()
+
+    # Add a main title to the figure
+    fig.suptitle("Hash Function Optimization Algorithm Comparison", fontsize=14, y=1.05)
+
+    # Print summary statistics
+    print("\nSummary Statistics:")
+    print("\nMean Collisions:")
+    means = results_df[
+        [
+            "Hill Climbing Collisions",
+            "Simulated Annealing Collisions",
+            "Nelder-Mead Collisions",
+        ]
+    ].mean()
+    print(means)
+
+    print("\nMedian Collisions:")
+    medians = results_df[
+        [
+            "Hill Climbing Collisions",
+            "Simulated Annealing Collisions",
+            "Nelder-Mead Collisions",
+        ]
+    ].median()
+    print(medians)
+
+    print("\nBest Algorithm Distribution:")
+    distribution = results_df["Best method"].value_counts(normalize=True)
+    print(distribution)
+
+    # Show the plot
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
