@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 class HashTable:
-    def __init__(self, size, load_factor_threshold=0.7):
+    def __init__(self, size, load_factor_threshold=0.75):
         self.size = size
         self.load_factor_threshold = load_factor_threshold
         self.table = [None] * self.size
@@ -316,13 +316,14 @@ def nelder_mead(
     return best_point[0], best_point[1], int(best_point[2]), int(best_value)
 
 
-def compare_iteration():
+def compare_iteration(seed):
     # Create an instance of HashTable with initial size
     initial_size = 20
     hash_table = HashTable(initial_size)
 
     # Insert random keys into the hash table for testing
     # print("Inserting test data...")
+    random.seed(seed)
     for i in range(50):
         hash_table.insert(random.randint(0, 1000), i, a=1, b=1)
 
@@ -375,6 +376,9 @@ def compare_iteration():
 
 
 def main():
+    random.seed(42)
+    np.random.seed(42)
+
     # Run experiments
     num_iterations = 50
     results_df = []
@@ -383,7 +387,7 @@ def main():
     for i in range(num_iterations):
         if i % 10 == 0:
             print(f"Progress: {i}/{num_iterations}")
-        results_df.append(compare_iteration())
+        results_df.append(compare_iteration(i))
 
     # Convert results to DataFrame
     results_df = pd.DataFrame(
